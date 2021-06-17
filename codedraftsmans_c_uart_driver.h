@@ -16,12 +16,12 @@ struct uart_dev {
 	void (*receivedCharHandler) (uint8_t);
 	uint32_t rx_pin_has_been_consecutively_high_for_the_last_n_samples;
 
-	uint32_t numberOfStopBits;
+	uint32_t number_of_stop_bits;
 	uint32_t hasParityBit;
 
 };
 
-struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void), void (*receivedCharHandler) (uint8_t));
-uint32_t rxFrameSize(struct uart_dev *dev);
+struct uart_dev uart_rx_init(uint32_t oversamplingRate, int (*read_rx_pin) (void), void (*receivedCharHandler) (uint8_t));
+uint32_t uart_rx_frame_size(struct uart_dev *dev);
 
 #endif

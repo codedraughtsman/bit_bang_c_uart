@@ -3,7 +3,7 @@
 
 void rxInterruptHandler(struct uart_dev *dev) ;
 
-struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void), void (*receivedCharHandler) (uint8_t)){
+struct uart_dev uart_rx_init(uint32_t oversamplingRate, int (*read_rx_pin) (void), void (*receivedCharHandler) (uint8_t)){
 	struct uart_dev dev;
 	dev.countTillNextReadOfRX = 0;
 
@@ -19,7 +19,7 @@ struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void)
 
 	dev.read_rx_pin = read_rx_pin;
 
-	dev.numberOfStopBits = 1;
+	dev.number_of_stop_bits = 1;
 	dev.hasParityBit= 0;
 	dev.receivedCharHandler= receivedCharHandler;
 
@@ -27,8 +27,8 @@ struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void)
 	return dev;
 }
 
-uint32_t rx_frame_size(struct uart_dev *dev){
-	return dev->numberOfStopBits + 8 + 1 + dev->hasParityBit;
+uint32_t uart_rx_frame_size(struct uart_dev *dev){
+	return dev->number_of_stop_bits + 8 + 1 + dev->hasParityBit;
 	//stop bits + data bits + start bits + parityBit.
 }
 
@@ -38,7 +38,7 @@ void add_bit_to_rx_frame_buffer(struct uart_dev *dev, uint32_t bit){
 }
 
 uint32_t rx_frame_buffer_is_complete(struct uart_dev *dev){
-	return dev->rx_current_frame_index >= dev->numberOfStopBits + dev->hasParityBit + 8+ 1;
+	return dev->rx_current_frame_index >= dev->number_of_stop_bits + dev->hasParityBit + 8+ 1;
 }
 
 void rxSyncTiming(struct uart_dev *dev, uint32_t pin_val){
@@ -78,7 +78,7 @@ uint8_t getRxFrameBufferData(struct uart_dev *dev){
 	return (dev->rx_current_frame >> 1) & 0xff;
 }
 
-void resetRxFrameBuffer(struct uart_dev *dev){
+void reset_rx_frame_buffer(struct uart_dev *dev){
 	dev->rx_current_frame = 0;
 	dev->rx_current_frame_index =0;
 }
@@ -125,6 +125,6 @@ void rxInterruptHandler(struct uart_dev *dev) {
 	} else {
 		dev->receivedCharHandler(getRxFrameBufferData(dev));
 	}
-	resetRxFrameBuffer(dev);
+	reset_rx_frame_buffer(dev);
 
 }

@@ -36,7 +36,7 @@ uint32_t make_frame(struct uart_dev *dev, uint8_t data){
 
 	//todo set parityBit.
 	//set stop bits.
-	for (int i=0; i< dev->numberOfStopBits; i++){
+	for (int i=0; i< dev->number_of_stop_bits; i++){
 		frame |= (1 << (9+i));
 	}
 
@@ -64,7 +64,7 @@ void mockedPinSetString(struct uart_dev *dev, char *str){
 }
 
 int mockedPin_data(){
-	if (mockedPinCurrentFrameIndex >= rx_frame_size(&dev)) {
+	if (mockedPinCurrentFrameIndex >= uart_rx_frame_size(&dev)) {
 		//need to load the next byte into the frame buffer.
 		mockedPinIndexOfByteBeingSent ++;
 		mockedPinCurrentFrame = make_frame(&dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
@@ -85,7 +85,7 @@ int mockedPin_high(){
 
 
 struct uart_dev commonUart(){
-	return create_uart(3, mockedPin_data, receivedCharHandler);
+	return uart_rx_init(3, mockedPin_data, receivedCharHandler);
 }
 
 
@@ -145,7 +145,7 @@ int test_getRxFrameBufferData(){
 	return PASS;
 }
 
-int test_resetRxFrameBuffer(){
+int test_reset_rx_frame_buffer(){
 	dev = commonUart();
 	//just using random values, the index does not match with the number of bits written to the
 	//current_frame.
@@ -154,7 +154,7 @@ int test_resetRxFrameBuffer(){
 
 	ASSERT_EQUAL(dev.rx_current_frame, 0x2aa, "dev.rx_current_frame == 0x2aa");
 	ASSERT_EQUAL(dev.rx_current_frame_index, 5, "dev.rx_current_frame_index == 5");
-	resetRxFrameBuffer(&dev);
+	reset_rx_frame_buffer(&dev);
 	ASSERT_EQUAL(dev.rx_current_frame, 0, "dev.rx_current_frame == 0");
 	ASSERT_EQUAL(dev.rx_current_frame_index, 0, "dev.rx_current_frame_index == 0");
 
@@ -168,7 +168,7 @@ int test_rx_frame_buffer_is_complete(){
 	dev = commonUart();
 	uint8_t startData = 0x5a;
 
-	for (int i=0; i<rx_frame_size(&dev); i++) {
+	for (int i=0; i<uart_rx_frame_size(&dev); i++) {
 		ASSERT_EQUAL(rx_frame_buffer_is_complete(&dev), 0, "rx_frame_buffer_is_complete(&dev) == 0");
 		if (i>=1 && i <9){
 
@@ -202,7 +202,7 @@ int test_rxInterruptHandler(){
 	mockedPinSetString(&dev, startData);
 
 
-	for (int i=0; i<dev.oversamplingRate * rx_frame_size(&dev)* (strlen(startData)+3); i++) {
+	for (int i=0; i<dev.oversamplingRate * uart_rx_frame_size(&dev)* (strlen(startData)+3); i++) {
 		rxInterruptHandler(&dev);
 	}
 
@@ -252,7 +252,7 @@ int main(){
 			{"test_add_bit_to_rx_frame_buffer", test_add_bit_to_rx_frame_buffer},
 			{"test_rxSyncTiming", test_rxSyncTiming},
 			{"test_getRxFrameBufferData", test_getRxFrameBufferData},
-			{"test_resetRxFrameBuffer", test_resetRxFrameBuffer},
+			{"test_reset_rx_frame_buffer", test_reset_rx_frame_buffer},
 			{"test_rx_frame_buffer_is_complete", test_rx_frame_buffer_is_complete},
 			{"test_rxInterruptHandler", test_rxInterruptHandler},
 //			{"test_moveRxFrameDataToBuffer", test_moveRxFrameDataToBuffer},
