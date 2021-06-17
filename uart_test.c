@@ -89,7 +89,7 @@ struct uart_dev commonUart(){
 }
 
 
-int test_addBitToRxFrameBuffer(){
+int test_add_bit_to_rx_frame_buffer(){
 	dev = commonUart();
 
 	//check that the dev has been initialized properly.
@@ -97,7 +97,7 @@ int test_addBitToRxFrameBuffer(){
 	ASSERT_EQUAL(dev.rx_current_frame, 0, "rx_current_frame ==0");
 	for (int i=0; i<10; i++){
 		ASSERT_EQUAL(dev.rx_current_frame_index, i, "rx_current_frame_index==0");
-		addBitToRxFrameBuffer(&dev, bits[i]);
+		add_bit_to_rx_frame_buffer(&dev, bits[i]);
 	}
 
 	ASSERT_EQUAL(dev.rx_current_frame, 0x19f, "rx_current_frame ==0xf91");
@@ -164,22 +164,22 @@ int test_resetRxFrameBuffer(){
 
 
 
-int test_RxFrameBufferIsComplete(){
+int test_rx_frame_buffer_is_complete(){
 	dev = commonUart();
 	uint8_t startData = 0x5a;
 
 	for (int i=0; i<rx_frame_size(&dev); i++) {
-		ASSERT_EQUAL(RxFrameBufferIsComplete(&dev), 0, "RxFrameBufferIsComplete(&dev) == 0");
+		ASSERT_EQUAL(rx_frame_buffer_is_complete(&dev), 0, "rx_frame_buffer_is_complete(&dev) == 0");
 		if (i>=1 && i <9){
 
-			addBitToRxFrameBuffer(&dev, (startData >>(i-1)) & 0x01);
+			add_bit_to_rx_frame_buffer(&dev, (startData >>(i-1)) & 0x01);
 		} else {
 			//we don't care about these bits.
-			addBitToRxFrameBuffer(&dev, 1);
+			add_bit_to_rx_frame_buffer(&dev, 1);
 		}
 
 	}
-	ASSERT_EQUAL(RxFrameBufferIsComplete(&dev), 1, "RxFrameBufferIsComplete(&dev) == 1");
+	ASSERT_EQUAL(rx_frame_buffer_is_complete(&dev), 1, "rx_frame_buffer_is_complete(&dev) == 1");
 
 	uint8_t data = getRxFrameBufferData(&dev);
 	ASSERT_EQUAL(data, startData, "data == startData");
@@ -249,11 +249,11 @@ struct test_struct {
 int main(){
 	uint32_t numberOfTestsFailed = 0;
 	struct test_struct tests[] ={
-			{"test_addBitToRxFrameBuffer", test_addBitToRxFrameBuffer},
+			{"test_add_bit_to_rx_frame_buffer", test_add_bit_to_rx_frame_buffer},
 			{"test_rxSyncTiming", test_rxSyncTiming},
 			{"test_getRxFrameBufferData", test_getRxFrameBufferData},
 			{"test_resetRxFrameBuffer", test_resetRxFrameBuffer},
-			{"test_RxFrameBufferIsComplete", test_RxFrameBufferIsComplete},
+			{"test_rx_frame_buffer_is_complete", test_rx_frame_buffer_is_complete},
 			{"test_rxInterruptHandler", test_rxInterruptHandler},
 //			{"test_moveRxFrameDataToBuffer", test_moveRxFrameDataToBuffer},
 			{"\0", NULL}

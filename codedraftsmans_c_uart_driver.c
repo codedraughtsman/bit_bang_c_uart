@@ -32,12 +32,12 @@ uint32_t rx_frame_size(struct uart_dev *dev){
 	//stop bits + data bits + start bits + parityBit.
 }
 
-void addBitToRxFrameBuffer(struct uart_dev *dev, uint32_t bit){
+void add_bit_to_rx_frame_buffer(struct uart_dev *dev, uint32_t bit){
 	dev->rx_current_frame |= bit << dev->rx_current_frame_index;
 	dev->rx_current_frame_index ++;
 }
 
-uint32_t RxFrameBufferIsComplete(struct uart_dev *dev){
+uint32_t rx_frame_buffer_is_complete(struct uart_dev *dev){
 	return dev->rx_current_frame_index >= dev->numberOfStopBits + dev->hasParityBit + 8+ 1;
 }
 
@@ -110,9 +110,9 @@ void rxInterruptHandler(struct uart_dev *dev) {
 
 	dev->countTillNextReadOfRX = dev->oversamplingRate;
 	//add bit to message buffer
-	addBitToRxFrameBuffer(dev, pin_val);
+	add_bit_to_rx_frame_buffer(dev, pin_val);
 
-	if (!RxFrameBufferIsComplete(dev)){
+	if (!rx_frame_buffer_is_complete(dev)){
 		//still need more bits before this frame is completed.
 		return;
 	}
