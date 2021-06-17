@@ -101,7 +101,6 @@ void rxInterruptHandler(struct uart_dev *dev) {
 	//this is to prevent the pin's value from possibly changing as this function
 	//is running.
 	uint32_t pin_val = dev->read_rx_pin();
-//	printf("rxInterruptHandler start: pinval is %d\n", pin_val);
 	//we want the user to only use the first bit.
 	//if any of the other bits are set then we need to throw an error
 	//to let the user know to fix their code.
@@ -117,7 +116,7 @@ void rxInterruptHandler(struct uart_dev *dev) {
 
 
 	dev->countTillNextReadOfRX --;
-//	printf("dev->countTillNextReadOfRX is %d, dev->rx_is_setup is %d\n",dev->countTillNextReadOfRX,dev->rx_is_setup);
+	printf("dev->countTillNextReadOfRX is %d, dev->rx_is_setup is %d, pin val %d\n",dev->countTillNextReadOfRX,dev->rx_is_setup,pin_val);
 	if (!dev->rx_is_setup || dev->countTillNextReadOfRX > 0) {
 		return;
 	}

@@ -33,11 +33,12 @@ uint32_t makeFrame(struct uart_dev *dev, uint8_t data){
 	//the start bit is already set to zero.
 	frame |= ((uint32_t) data << 1);
 
+	//todo set parityBit.
 	//set stop bits.
 	for (int i=0; i< dev->numberOfStopBits; i++){
 		frame |= (1 << (9+i));
 	}
-	//todo add parityBit.
+
 
 	return frame;
 }
@@ -216,8 +217,17 @@ int test_rxInterruptHandler(){
 	struct uart_dev dev = commonUart();
 	int8_t *startData = "hello world";
 	mockedPinClearData();
-	mockedPinAddData(&dev, 0xffff, 32);
+	//mockedPinAddData(&dev, 0xffff, 32);
 	mockedPinAddString(&dev, startData);
+	for (int i=0;i<mockedPinBitsWritten/32;i++){
+		for (int j=0;j<32;j++){
+			uint32_t byte =mockedPinData[i];
+			uint32_t bit = (byte >> j) &0x01;
+			printf("%d",bit);
+		}
+		printf(" ");
+	}
+	printf("\n");
 
 	for (int i=0; i<500; i++) {
 		rxInterruptHandler(&dev);
