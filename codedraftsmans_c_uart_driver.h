@@ -13,8 +13,7 @@ struct uart_dev {
 	uint8_t rx_is_setup;
 	uint8_t rx_max_frame_index;
 
-	uint8_t rx_buffer[200];
-	uint32_t rx_buffer_current_index;
+	void (*receivedCharHandler) (uint8_t);
 	uint32_t rx_pin_has_been_consecutively_high_for_the_last_n_samples;
 
 	uint32_t numberOfStopBits;
@@ -22,7 +21,7 @@ struct uart_dev {
 
 };
 
-struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void));
+struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void), void (*receivedCharHandler) (uint8_t));
 uint32_t rxFrameSize(struct uart_dev *dev);
 
 #endif

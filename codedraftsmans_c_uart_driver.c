@@ -3,7 +3,7 @@
 
 void rxInterruptHandler(struct uart_dev *dev) ;
 
-struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void)){
+struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void), void (*receivedCharHandler) (uint8_t)){
 	struct uart_dev dev;
 	dev.countTillNextReadOfRX = 0;
 
@@ -19,10 +19,10 @@ struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void)
 
 	dev.read_rx_pin = read_rx_pin;
 
-	//todo memset dev.rx_buffer to zero.
-	dev.rx_buffer_current_index =0;
 	dev.numberOfStopBits = 1;
 	dev.hasParityBit= 0;
+	dev.receivedCharHandler= receivedCharHandler;
+
 
 	return dev;
 }
@@ -89,12 +89,12 @@ void resetRxFrameBuffer(struct uart_dev *dev){
 	dev->rx_current_frame = 0;
 	dev->rx_current_frame_index =0;
 }
-void moveRxFrameDataToBuffer(struct uart_dev *dev){
-	uint8_t frame_data = getRxFrameBufferData(dev);
-	resetRxFrameBuffer(dev);
-
-	dev->rx_buffer[dev->rx_buffer_current_index++] = frame_data;
-}
+//void moveRxFrameDataToBuffer(struct uart_dev *dev){
+//	uint8_t frame_data = getRxFrameBufferData(dev);
+//	resetRxFrameBuffer(dev);
+//
+//	dev->rx_buffer[dev->rx_buffer_current_index++] = frame_data;
+//}
 void rxInterruptHandler(struct uart_dev *dev) {
 
 	//first read the pin, then pass it to all the functions that need it.
@@ -129,9 +129,15 @@ void rxInterruptHandler(struct uart_dev *dev) {
 		//still need more bits before this frame is completed.
 		return;
 	}
-//	printf("frame buffer is complete, moving data to buffer\n");
-	//frame is completed, add it to the buffer
-	moveRxFrameDataToBuffer(dev);
+
+	//frame is completed, call the handler function
+	if (dev->receivedCharHandler == 0) {
+		//the function is not set. Do nothing and alert the user.
+		printf("the receivedCharHandler is null\n");
+		return;
+	}
+	dev->receivedCharHandler(getRxFrameBufferData(dev));
+	resetRxFrameBuffer(dev);
 
 
 	//todo add a call back function that gets called every time a new byte is received?
