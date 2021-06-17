@@ -27,7 +27,7 @@ struct uart_dev create_uart(uint32_t oversamplingRate, int (*read_rx_pin) (void)
 	return dev;
 }
 
-uint32_t rxFrameSize(struct uart_dev *dev){
+uint32_t rx_frame_size(struct uart_dev *dev){
 	return dev->numberOfStopBits + 8 + 1 + dev->hasParityBit;
 	//stop bits + data bits + start bits + parityBit.
 }

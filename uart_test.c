@@ -29,7 +29,7 @@ struct uart_dev dev;
 
 
 
-uint32_t makeFrame(struct uart_dev *dev, uint8_t data){
+uint32_t make_frame(struct uart_dev *dev, uint8_t data){
 	uint32_t frame = 0;
 	//the start bit is already set to zero.
 	frame |= ((uint32_t) data << 1);
@@ -58,16 +58,16 @@ void clear_rx_buffer(){
 void mockedPinSetString(struct uart_dev *dev, char *str){
 	strcpy(mockedPinData, str);
 	mockedPinIndexOfByteBeingSent=0;
-	mockedPinCurrentFrame = makeFrame(dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
+	mockedPinCurrentFrame = make_frame(dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
 	mockedPinCurrentFrameIndex =0;
 	mockedPinOversamplingCounter = dev->oversamplingRate;
 }
 
 int mockedPin_data(){
-	if (mockedPinCurrentFrameIndex >= rxFrameSize(&dev)) {
+	if (mockedPinCurrentFrameIndex >= rx_frame_size(&dev)) {
 		//need to load the next byte into the frame buffer.
 		mockedPinIndexOfByteBeingSent ++;
-		mockedPinCurrentFrame = makeFrame(&dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
+		mockedPinCurrentFrame = make_frame(&dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
 		mockedPinCurrentFrameIndex =0;
 	}
 	uint8_t val = (mockedPinCurrentFrame >> mockedPinCurrentFrameIndex)& 0x01;
@@ -168,7 +168,7 @@ int test_RxFrameBufferIsComplete(){
 	dev = commonUart();
 	uint8_t startData = 0x5a;
 
-	for (int i=0; i<rxFrameSize(&dev); i++) {
+	for (int i=0; i<rx_frame_size(&dev); i++) {
 		ASSERT_EQUAL(RxFrameBufferIsComplete(&dev), 0, "RxFrameBufferIsComplete(&dev) == 0");
 		if (i>=1 && i <9){
 
@@ -202,7 +202,7 @@ int test_rxInterruptHandler(){
 	mockedPinSetString(&dev, startData);
 
 
-	for (int i=0; i<dev.oversamplingRate * rxFrameSize(&dev)* (strlen(startData)+3); i++) {
+	for (int i=0; i<dev.oversamplingRate * rx_frame_size(&dev)* (strlen(startData)+3); i++) {
 		rxInterruptHandler(&dev);
 	}
 
