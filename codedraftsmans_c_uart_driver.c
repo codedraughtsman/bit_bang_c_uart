@@ -89,12 +89,7 @@ void resetRxFrameBuffer(struct uart_dev *dev){
 	dev->rx_current_frame = 0;
 	dev->rx_current_frame_index =0;
 }
-//void moveRxFrameDataToBuffer(struct uart_dev *dev){
-//	uint8_t frame_data = getRxFrameBufferData(dev);
-//	resetRxFrameBuffer(dev);
-//
-//	dev->rx_buffer[dev->rx_buffer_current_index++] = frame_data;
-//}
+
 void rxInterruptHandler(struct uart_dev *dev) {
 
 	//first read the pin, then pass it to all the functions that need it.
