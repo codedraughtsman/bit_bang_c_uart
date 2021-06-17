@@ -104,11 +104,10 @@ void rxInterruptHandler(struct uart_dev *dev) {
 
 
 	dev->countTillNextReadOfRX --;
-//	printf("dev->countTillNextReadOfRX is %d, dev->rx_is_setup is %d, pin val %d\n",dev->countTillNextReadOfRX,dev->rx_is_setup,pin_val);
 	if (!dev->rx_is_setup || dev->countTillNextReadOfRX > 0) {
 		return;
 	}
-//	printf("now adding bit %d to frame\n", pin_val);
+
 	dev->countTillNextReadOfRX = dev->oversamplingRate;
 	//add bit to message buffer
 	addBitToRxFrameBuffer(dev, pin_val);
@@ -120,15 +119,12 @@ void rxInterruptHandler(struct uart_dev *dev) {
 
 	//frame is completed, call the handler function
 	if (dev->receivedCharHandler == 0) {
-		//the function is not set. Do nothing and alert the user.
-		printf("the receivedCharHandler is null\n");
-		return;
+		//the callback function is not set. Do nothing
+		//todo Alert the user.
+
+	} else {
+		dev->receivedCharHandler(getRxFrameBufferData(dev));
 	}
-	dev->receivedCharHandler(getRxFrameBufferData(dev));
 	resetRxFrameBuffer(dev);
-
-
-	//todo add a call back function that gets called every time a new byte is received?
-
 
 }
