@@ -58,7 +58,7 @@ void rxSyncTiming(struct uart_dev *dev, uint32_t pin_val){
 
 
 		//this value will cause the interrupt handler to read the pin on the next interrupt.
-		dev->countTillNextReadOfRX = 2;
+		dev->countTillNextReadOfRX = (dev->oversamplingRate+1) /2;
 
 		//don't do the setup again.
 		dev->rx_is_setup = 1;
@@ -116,11 +116,11 @@ void rxInterruptHandler(struct uart_dev *dev) {
 
 
 	dev->countTillNextReadOfRX --;
-	printf("dev->countTillNextReadOfRX is %d, dev->rx_is_setup is %d, pin val %d\n",dev->countTillNextReadOfRX,dev->rx_is_setup,pin_val);
+//	printf("dev->countTillNextReadOfRX is %d, dev->rx_is_setup is %d, pin val %d\n",dev->countTillNextReadOfRX,dev->rx_is_setup,pin_val);
 	if (!dev->rx_is_setup || dev->countTillNextReadOfRX > 0) {
 		return;
 	}
-	printf("now adding bit %d to frame\n", pin_val);
+//	printf("now adding bit %d to frame\n", pin_val);
 	dev->countTillNextReadOfRX = dev->oversamplingRate;
 	//add bit to message buffer
 	addBitToRxFrameBuffer(dev, pin_val);
@@ -129,7 +129,7 @@ void rxInterruptHandler(struct uart_dev *dev) {
 		//still need more bits before this frame is completed.
 		return;
 	}
-	printf("frame buffer is complete, moving data to buffer\n");
+//	printf("frame buffer is complete, moving data to buffer\n");
 	//frame is completed, add it to the buffer
 	moveRxFrameDataToBuffer(dev);
 
