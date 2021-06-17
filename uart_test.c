@@ -13,19 +13,17 @@
 		return FAIL; \
 	}
 
-uint32_t mockedPinData[500] ={0};
+uint8_t mockedPinData[500] ={0};
 uint32_t mockedPinBitsWritten =0;
 uint32_t mockedPinBitsRead =0;
-uint32_t mockedPinOversamplingCounter =0;
+uint32_t mockedPinOversamplingCounter = 0;
 uint32_t mockedPinOversampling = 2;
+uint32_t mockedPinCurrentFrame = 0;
+uint32_t mockedPinCurrentFrameIndex = 0;
+uint32_t mockedPinIndexOfByteBeingSent =0;
 
-int mockedPinClearData(){
-	memset(mockedPinData, 0 ,4*500);
-	mockedPinBitsWritten = 0;
-	mockedPinBitsRead = 0;
-	mockedPinOversamplingCounter =0;
+struct uart_dev dev;
 
-}
 
 
 uint32_t makeFrame(struct uart_dev *dev, uint8_t data){
@@ -46,77 +44,66 @@ uint32_t makeFrame(struct uart_dev *dev, uint8_t data){
 
 
 
-void mockedPinAddData(struct uart_dev *dev, uint32_t data, uint32_t nBits){
-	uint32_t *ptr = mockedPinData + (mockedPinBitsWritten / 32);
-	uint32_t offset = mockedPinBitsWritten %32;
 
-	*ptr |= (data << offset);
-	//handle when the mocked pin needs to write over two uint32_t.
-	//i.e. the data is written to the start of the first uint32_t and the
-	//beginning of the second one.
-	if (offset + nBits >=32) {
-		uint32_t bitsStillNeedToBeWritten = nBits + offset - 32;
-		uint32_t bitsThatHaveBeenWritten = nBits - bitsStillNeedToBeWritten;
-		mockedPinBitsWritten += bitsThatHaveBeenWritten;
-		mockedPinAddData(dev, (data >> bitsThatHaveBeenWritten), bitsStillNeedToBeWritten);
-	} else {
-		mockedPinBitsWritten += nBits;
-	}
+
+void mockedPinSetString(struct uart_dev *dev, char *str){
+	strcpy(mockedPinData, str);
+	mockedPinIndexOfByteBeingSent=0;
+	mockedPinCurrentFrame = makeFrame(dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
+	mockedPinCurrentFrameIndex =0;
+	mockedPinOversamplingCounter = mockedPinOversampling;
 }
 
-void mockedPinAddString(struct uart_dev *dev, char *str){
-	for (int i=0; str[i] != '\0'; i ++){
-		uint32_t frame = makeFrame(dev, str[i]);
-		mockedPinAddData(dev, frame, rxFrameSize(dev));
+int mockedPin_data(){
+	if (mockedPinCurrentFrameIndex >= rxFrameSize(&dev)) {
+		//need to load the next byte into the frame buffer.
+		mockedPinIndexOfByteBeingSent ++;
+		mockedPinCurrentFrame = makeFrame(&dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
+		mockedPinCurrentFrameIndex =0;
 	}
-	uint32_t frame = makeFrame(dev, '\0');
-	mockedPinAddData(dev, frame, rxFrameSize(dev));
-}
-
-int mockedPin(){
-	//todo check to see that the index has not gone out of the data array.
-	uint32_t *ptr = mockedPinData + (mockedPinBitsRead / 32);
-	uint32_t offset = mockedPinBitsRead %32;
-	uint8_t val = (*ptr >> offset) & 0x01;
-
-	mockedPinOversamplingCounter ++;
-	if (mockedPinOversamplingCounter >= mockedPinOversampling){
-		mockedPinBitsRead ++;
-		mockedPinOversamplingCounter = 0;
+	printf("mockedPinCurrentFrameIndex %d\n", mockedPinCurrentFrameIndex);
+	uint8_t val = (mockedPinCurrentFrame >> mockedPinCurrentFrameIndex)& 0x01;
+	mockedPinOversamplingCounter --;
+	if (mockedPinOversamplingCounter <=0){
+		mockedPinCurrentFrameIndex ++;
+		mockedPinOversamplingCounter = mockedPinOversampling;
 	}
 	return val;
 }
 
+int mockedPin_high(){
+	return 1;
+}
+
 
 struct uart_dev commonUart(){
-	return create_uart(2, mockedPin);
+	return create_uart(2, mockedPin_data);
 }
 
-int test_addDataToMockedPin(){
-	struct uart_dev dev = commonUart();
-	mockedPinClearData();
-	uint8_t *str = "hello";
-	mockedPinAddString(&dev, str);
-
-	for (int j=0; str[j] != '\0'; j++){
-		//chomp start bit
-		mockedPin();
-		for (int i=0; i<8; i++){
-			uint8_t mockedValue =0;
-			for (int x=0;x<8;x++){
-				mockedValue |= (mockedPin() << x);
-			}
-			ASSERT_EQUAL(mockedValue, str[j], "test_addDataToMockedPin: data from mocked pin does not match expected data\n")
-		}
-		for (int i=0; i< dev.numberOfStopBits + dev.hasParityBit; i ++){
-			//chomp stop bits and parity bits
-			mockedPin();
-		}
-	}
-}
+//int test_addDataToMockedPin(){
+//	dev = commonUart();
+//	uint8_t *str = "hello";
+//	mockedPinSetString(&dev, str);
+//
+//	for (int j=0; str[j] != '\0'; j++){
+//		//chomp start bit
+//		mockedPin_high();
+//		for (int i=0; i<8; i++){
+//			uint8_t mockedValue =0;
+//			for (int x=0;x<8;x++){
+//				mockedValue |= (mockedPin_high() << x);
+//			}
+//			ASSERT_EQUAL(mockedValue, str[j], "test_addDataToMockedPin: data from mocked pin does not match expected data\n")
+//		}
+//		for (int i=0; i< dev.numberOfStopBits + dev.hasParityBit; i ++){
+//			//chomp stop bits and parity bits
+//			mockedPin_high();
+//		}
+//	}
+//}
 
 int test_addBitToRxFrameBuffer(){
-	struct uart_dev dev = commonUart();
+	dev = commonUart();
 
 	//check that the dev has been initialized properly.
 	uint32_t bits[] = {1,1,1,1,1,0,0,1,1,0};
@@ -134,7 +121,7 @@ int test_addBitToRxFrameBuffer(){
 }
 
 int test_rxSyncTiming(){
-	struct uart_dev dev = commonUart();
+	dev = commonUart();
 	ASSERT_EQUAL(dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples, 0, "dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples ==0")
 	ASSERT_EQUAL(dev.rx_is_setup, 0, "dev.rex_is_setup == 0");
 
@@ -163,7 +150,7 @@ int test_rxSyncTiming(){
 }
 
 int test_getRxFrameBufferData(){
-	struct uart_dev dev = commonUart();
+	dev = commonUart();
 	dev.rx_current_frame = 0x2aa;
 	uint8_t data = getRxFrameBufferData(&dev);
 
@@ -172,7 +159,7 @@ int test_getRxFrameBufferData(){
 }
 
 int test_resetRxFrameBuffer(){
-	struct uart_dev dev = commonUart();
+	dev = commonUart();
 	//just using random values, the index does not match with the number of bits written to the
 	//current_frame.
 	dev.rx_current_frame = 0x2aa;
@@ -191,7 +178,7 @@ int test_resetRxFrameBuffer(){
 
 
 int test_RxFrameBufferIsComplete(){
-	struct uart_dev dev = commonUart();
+	dev = commonUart();
 	uint8_t startData = 0x5a;
 
 	for (int i=0; i<9; i++) {
@@ -214,11 +201,18 @@ int test_RxFrameBufferIsComplete(){
 }
 
 int test_rxInterruptHandler(){
-	struct uart_dev dev = commonUart();
+	dev = commonUart();
+
+	//high bits to setup the syncing of the frames.
+	dev.read_rx_pin = mockedPin_high;
+	for (int i=0; i<12; i++) {
+		rxInterruptHandler(&dev);
+	}
+
+	dev.read_rx_pin = mockedPin_data;
 	int8_t *startData = "hello world";
-	mockedPinClearData();
-	//mockedPinAddData(&dev, 0xffff, 32);
-	mockedPinAddString(&dev, startData);
+
+	mockedPinSetString(&dev, startData);
 	for (int i=0;i<mockedPinBitsWritten/32;i++){
 		for (int j=0;j<32;j++){
 			uint32_t byte =mockedPinData[i];
@@ -229,7 +223,7 @@ int test_rxInterruptHandler(){
 	}
 	printf("\n");
 
-	for (int i=0; i<500; i++) {
+	for (int i=0; i<300; i++) {
 		rxInterruptHandler(&dev);
 	}
 
@@ -250,7 +244,7 @@ int set_rx_current_frame_data(struct uart_dev *dev, uint8_t newData){
 }
 
 int test_moveRxFrameDataToBuffer(){
-	struct uart_dev dev = commonUart();
+	dev = commonUart();
 
 	//todo do something with this return code if the setting fails.
 	set_rx_current_frame_data(&dev, 'a');
