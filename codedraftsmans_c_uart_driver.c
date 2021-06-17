@@ -32,11 +32,6 @@ uint32_t rxFrameSize(struct uart_dev *dev){
 	//stop bits + data bits + start bits + parityBit.
 }
 
-void pollingInterruptHandler(struct uart_dev *dev) {
-	//first read the incoming data.
-	rxInterruptHandler(dev);
-}
-
 void addBitToRxFrameBuffer(struct uart_dev *dev, uint32_t bit){
 	dev->rx_current_frame |= bit << dev->rx_current_frame_index;
 	dev->rx_current_frame_index ++;
@@ -47,8 +42,6 @@ uint32_t RxFrameBufferIsComplete(struct uart_dev *dev){
 }
 
 void rxSyncTiming(struct uart_dev *dev, uint32_t pin_val){
-
-
 
 	if (!dev->rx_is_setup && pin_val == 0 && dev->rx_pin_has_been_consecutively_high_for_the_last_n_samples > 0){
 		//the signal has started.
