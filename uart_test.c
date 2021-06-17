@@ -25,11 +25,11 @@ uint32_t mockedPinIndexOfByteBeingSent =0;
 uint8_t rx_buffer[500];
 uint32_t rx_buffer_index =0;
 
-struct uart_dev dev;
+struct uart_rx_dev dev;
 
 
 
-uint32_t make_frame(struct uart_dev *dev, uint8_t data){
+uint32_t make_frame(struct uart_rx_dev *dev, uint8_t data){
 	uint32_t frame = 0;
 	//the start bit is already set to zero.
 	frame |= ((uint32_t) data << 1);
@@ -45,7 +45,7 @@ uint32_t make_frame(struct uart_dev *dev, uint8_t data){
 }
 
 
-void receivedCharHandler(uint8_t val){
+void received_data_handler(uint8_t val){
 	rx_buffer[rx_buffer_index++] = val;
 }
 void clear_rx_buffer(){
@@ -55,12 +55,12 @@ void clear_rx_buffer(){
 
 
 
-void mockedPinSetString(struct uart_dev *dev, char *str){
+void mockedPinSetString(struct uart_rx_dev *dev, char *str){
 	strcpy(mockedPinData, str);
 	mockedPinIndexOfByteBeingSent=0;
 	mockedPinCurrentFrame = make_frame(dev, mockedPinData[mockedPinIndexOfByteBeingSent]);
 	mockedPinCurrentFrameIndex =0;
-	mockedPinOversamplingCounter = dev->oversamplingRate;
+	mockedPinOversamplingCounter = dev->oversampling_rate;
 }
 
 int mockedPin_data(){
@@ -74,7 +74,7 @@ int mockedPin_data(){
 	mockedPinOversamplingCounter --;
 	if (mockedPinOversamplingCounter <=0){
 		mockedPinCurrentFrameIndex ++;
-		mockedPinOversamplingCounter = dev.oversamplingRate;
+		mockedPinOversamplingCounter = dev.oversampling_rate;
 	}
 	return val;
 }
@@ -84,8 +84,8 @@ int mockedPin_high(){
 }
 
 
-struct uart_dev commonUart(){
-	return uart_rx_init(3, mockedPin_data, receivedCharHandler);
+struct uart_rx_dev commonUart(){
+	return uart_rx_init(3, mockedPin_data, received_data_handler);
 }
 
 
@@ -109,16 +109,16 @@ int test_add_bit_to_rx_frame_buffer(){
 
 int test_rxSyncTiming(){
 	dev = commonUart();
-	ASSERT_EQUAL(dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples, 0, "dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples ==0")
+	ASSERT_EQUAL(dev.rx_pin_has_been_high_for, 0, "dev.rx_pin_has_been_high_for ==0")
 	ASSERT_EQUAL(dev.rx_is_setup, 0, "dev.rex_is_setup == 0");
 
 	rxSyncTiming(&dev, 1);
-	ASSERT_EQUAL(dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples, 1, "dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples == 1")
+	ASSERT_EQUAL(dev.rx_pin_has_been_high_for, 1, "dev.rx_pin_has_been_high_for == 1")
 	ASSERT_EQUAL(dev.rx_is_setup, 0, "dev.rex_is_setup == 0");
 
 	//start the timing pulse.
 	rxSyncTiming(&dev, 0);
-	ASSERT_EQUAL(dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples, 0, "dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples == 0")
+	ASSERT_EQUAL(dev.rx_pin_has_been_high_for, 0, "dev.rx_pin_has_been_high_for == 0")
 	ASSERT_EQUAL(dev.rx_is_setup, 1, "dev.rex_is_setup == 1");
 
 	//a long period without any data. this should cause the UART to reset its timing.
@@ -129,7 +129,7 @@ int test_rxSyncTiming(){
 
 	//start the timing pulse.
 	rxSyncTiming(&dev, 0);
-	ASSERT_EQUAL(dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples, 0, "dev.rx_pin_has_been_consecutively_high_for_the_last_n_samples == 0")
+	ASSERT_EQUAL(dev.rx_pin_has_been_high_for, 0, "dev.rx_pin_has_been_high_for == 0")
 	ASSERT_EQUAL(dev.rx_is_setup, 1, "dev.rex_is_setup == 1");
 
 
@@ -202,7 +202,7 @@ int test_rxInterruptHandler(){
 	mockedPinSetString(&dev, startData);
 
 
-	for (int i=0; i<dev.oversamplingRate * uart_rx_frame_size(&dev)* (strlen(startData)+3); i++) {
+	for (int i=0; i<dev.oversampling_rate * uart_rx_frame_size(&dev)* (strlen(startData)+3); i++) {
 		rxInterruptHandler(&dev);
 	}
 
@@ -217,7 +217,7 @@ int test_rxInterruptHandler(){
 
 	return PASS;
 }
-int set_rx_current_frame_data(struct uart_dev *dev, uint8_t newData){
+int set_rx_current_frame_data(struct uart_rx_dev *dev, uint8_t newData){
 	dev->rx_current_frame = ((uint32_t)newData) << 1;
 	ASSERT_EQUAL((dev->rx_current_frame >>1), newData, "set_rx_current_frame_data: dev->rx_current_frame == newData");
 }
