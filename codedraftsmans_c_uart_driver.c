@@ -1,28 +1,25 @@
 #include "codedraftsmans_c_uart_driver.h"
 
 
-struct uart_rx_dev uart_rx_init(uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t)){
-	struct uart_rx_dev dev;
-	dev.count_till_next_read = 0;
+void uart_rx_init(struct uart_rx_dev *dev, uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t)){
+	dev->count_till_next_read = 0;
 
-	dev.rx_is_setup = 0;
+	dev->rx_is_setup = 0;
 	//last pin needs to be set to 1 before it can be used for the
-	dev.rx_pin_has_been_high_for = 0;
+	dev->rx_pin_has_been_high_for = 0;
 
-	dev.rx_current_frame = 0;
-	dev.rx_current_frame_index = 0;
-	dev.rx_max_frame_index = 10; //todo calculate this based off of settings passed in by the user.
+	dev->rx_current_frame = 0;
+	dev->rx_current_frame_index = 0;
+	dev->rx_max_frame_index = 10; //todo calculate this based off of settings passed in by the user.
 
-	dev.oversampling_rate = oversampling_rate;
+	dev->oversampling_rate = oversampling_rate;
 
-	dev.read_rx_pin = read_rx_pin;
+	dev->read_rx_pin = read_rx_pin;
 
-	dev.number_of_stop_bits = 1;
-	dev.has_parity_bit= 0;
-	dev.received_data_handler= received_data_handler;
+	dev->number_of_stop_bits = 1;
+	dev->has_parity_bit= 0;
+	dev->received_data_handler = received_data_handler;
 
-
-	return dev;
 }
 
 uint32_t uart_rx_frame_size(struct uart_rx_dev *dev){
