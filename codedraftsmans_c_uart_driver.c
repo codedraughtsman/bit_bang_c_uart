@@ -1,9 +1,7 @@
 #include "codedraftsmans_c_uart_driver.h"
-#include <stdio.h>
 
-void rxInterruptHandler(struct uart_rx_dev *dev) ;
 
-struct uart_rx_dev uart_rx_init(uint32_t oversampling_rate, int (*read_rx_pin) (void), void (*received_data_handler) (uint8_t)){
+struct uart_rx_dev uart_rx_init(uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t)){
 	struct uart_rx_dev dev;
 	dev.count_till_next_read = 0;
 
@@ -33,12 +31,17 @@ uint32_t uart_rx_frame_size(struct uart_rx_dev *dev){
 }
 
 void add_bit_to_rx_frame_buffer(struct uart_rx_dev *dev, uint32_t bit){
-	dev->rx_current_frame |= bit << dev->rx_current_frame_index;
+	dev->rx_current_frame |= (bit << dev->rx_current_frame_index);
 	dev->rx_current_frame_index ++;
 }
 
 uint32_t rx_frame_buffer_is_complete(struct uart_rx_dev *dev){
-	return dev->rx_current_frame_index >= dev->number_of_stop_bits + dev->has_parity_bit + 8+ 1;
+	return dev->rx_current_frame_index >= dev->number_of_stop_bits + dev->has_parity_bit + 8 + 1;
+}
+
+void reset_rx_frame_buffer(struct uart_rx_dev *dev){
+	dev->rx_current_frame = 0;
+	dev->rx_current_frame_index =0;
 }
 
 void rxSyncTiming(struct uart_rx_dev *dev, uint32_t pin_val){
@@ -56,6 +59,9 @@ void rxSyncTiming(struct uart_rx_dev *dev, uint32_t pin_val){
 		//don't do the setup again.
 		dev->rx_is_setup = 1;
 
+		//reset the frame, in case we have a partly read frame for some reason.
+		reset_rx_frame_buffer(dev);
+
 	}
 
 	if (pin_val){
@@ -65,8 +71,8 @@ void rxSyncTiming(struct uart_rx_dev *dev, uint32_t pin_val){
 	}
 
 
-	if (dev->rx_pin_has_been_high_for/dev->oversampling_rate
-			>= dev->rx_max_frame_index){
+	if (dev->rx_pin_has_been_high_for
+			>= dev->rx_max_frame_index*dev->oversampling_rate){
 		//we have had enough time pass with no data being sent to know that the next time the rx pin goes low it is the start bit.
 		dev->rx_is_setup = 0;
 	}
@@ -78,12 +84,9 @@ uint8_t getRxFrameBufferData(struct uart_rx_dev *dev){
 	return (dev->rx_current_frame >> 1) & 0xff;
 }
 
-void reset_rx_frame_buffer(struct uart_rx_dev *dev){
-	dev->rx_current_frame = 0;
-	dev->rx_current_frame_index =0;
-}
 
-void rxInterruptHandler(struct uart_rx_dev *dev) {
+
+int32_t rxInterruptHandler(struct uart_rx_dev *dev) {
 
 	//first read the pin, then pass it to all the functions that need it.
 	//this is to prevent the pin's value from possibly changing as this function
@@ -96,7 +99,7 @@ void rxInterruptHandler(struct uart_rx_dev *dev) {
 		printf("Error: pin val is more than a single bit\n");
 		//print an error message.
 		//then throw an error to make it obvious.
-		return;
+		return -1;
 	}
 
 
@@ -104,8 +107,9 @@ void rxInterruptHandler(struct uart_rx_dev *dev) {
 
 
 	dev->count_till_next_read --;
+
 	if (!dev->rx_is_setup || dev->count_till_next_read > 0) {
-		return;
+		return -1;
 	}
 
 	dev->count_till_next_read = dev->oversampling_rate;
@@ -114,17 +118,19 @@ void rxInterruptHandler(struct uart_rx_dev *dev) {
 
 	if (!rx_frame_buffer_is_complete(dev)){
 		//still need more bits before this frame is completed.
-		return;
+		return -1;
 	}
 
 	//frame is completed, call the handler function
 	if (dev->received_data_handler == 0) {
 		//the callback function is not set. Do nothing
 		//todo Alert the user.
+		return -1;
 
 	} else {
 		dev->received_data_handler(getRxFrameBufferData(dev));
 	}
 	reset_rx_frame_buffer(dev);
+	return 1;
 
 }

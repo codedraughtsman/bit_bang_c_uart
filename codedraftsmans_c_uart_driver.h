@@ -21,7 +21,8 @@ struct uart_rx_dev {
 
 };
 
-struct uart_rx_dev uart_rx_init(uint32_t oversampling_rate, int (*read_rx_pin) (void), void (*received_data_handler) (uint8_t));
+struct uart_rx_dev uart_rx_init(uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t));
 uint32_t uart_rx_frame_size(struct uart_rx_dev *dev);
+int32_t rxInterruptHandler(struct uart_rx_dev *dev);
 
 #endif
