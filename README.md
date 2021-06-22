@@ -4,6 +4,13 @@ This is a generic, platform inderpendent, bit-bang uart driver.
 Currently, only the uart reciever is implemented and the uart transmitter will hopefully be added soon.
 
 ## how it works internally
+The main program uses a timer interrupt to sample the incoming uart signal. 
+It is recommend that you oversample the incoming uart signal by a factor of 3. (i.e. there are 3 interrupts per bit sent).
+
+##Finding and syncing up with the start of a uart packet.
+The uart driver has no way of knowing if it is starting to read the incoming signal halfway through the frame that is being sent.
+
+However it will resync up with the start of a new packet if no data is sent for at least the duration of one packet.
 
 ## what you have to do to get it to work.
 
