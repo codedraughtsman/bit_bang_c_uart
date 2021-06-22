@@ -11,7 +11,6 @@ struct uart_rx_dev {
 	uint16_t rx_current_frame;
 	uint32_t rx_current_frame_index;
 	uint8_t rx_is_setup;
-	uint8_t rx_max_frame_index;
 
 	void (*received_data_handler) (uint8_t);
 	uint32_t rx_pin_has_been_high_for;

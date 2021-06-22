@@ -10,7 +10,7 @@ void uart_rx_init(struct uart_rx_dev *dev, uint32_t oversampling_rate, uint32_t 
 
 	dev->rx_current_frame = 0;
 	dev->rx_current_frame_index = 0;
-	dev->rx_max_frame_index = 10; //todo calculate this based off of settings passed in by the user.
+
 
 	dev->oversampling_rate = oversampling_rate;
 
@@ -69,7 +69,7 @@ void rxSyncTiming(struct uart_rx_dev *dev, uint32_t pin_val){
 
 
 	if (dev->rx_pin_has_been_high_for
-			>= dev->rx_max_frame_index*dev->oversampling_rate){
+			>= uart_rx_frame_size(dev) * dev->oversampling_rate){
 		//we have had enough time pass with no data being sent to know that the next time the rx pin goes low it is the start bit.
 		dev->rx_is_setup = 0;
 	}
