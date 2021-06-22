@@ -12,7 +12,7 @@ struct uart_rx_dev {
 	uint32_t rx_current_frame_index;
 	uint8_t rx_is_setup;
 
-	void (*received_data_handler) (uint8_t);
+	void (*received_data_handler) (uint8_t, int32_t);
 	uint32_t rx_pin_has_been_high_for;
 
 	uint32_t number_of_stop_bits;
@@ -20,7 +20,7 @@ struct uart_rx_dev {
 
 };
 
-void uart_rx_init(struct uart_rx_dev *dev, uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t));
+void uart_rx_init(struct uart_rx_dev *dev, uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t, int32_t));
 uint32_t uart_rx_frame_size(struct uart_rx_dev *dev);
 int32_t rxInterruptHandler(struct uart_rx_dev *dev);
 

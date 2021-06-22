@@ -1,7 +1,7 @@
 #include "codedraftsmans_c_uart_driver.h"
 
 
-void uart_rx_init(struct uart_rx_dev *dev, uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t)){
+void uart_rx_init(struct uart_rx_dev *dev, uint32_t oversampling_rate, uint32_t (*read_rx_pin) (void), void (*received_data_handler) (uint8_t, int32_t)){
 	dev->count_till_next_read = 0;
 
 	dev->rx_is_setup = 0;
@@ -81,7 +81,12 @@ uint8_t getRxFrameBufferData(struct uart_rx_dev *dev){
 	return (dev->rx_current_frame >> 1) & 0xff;
 }
 
-
+int32_t getRxFrameBufferParityBit(struct uart_rx_dev *dev){
+	if (!dev->has_parity_bit) {
+		return -1;
+	}
+	return (dev->rx_current_frame >> 9) & 1;
+}
 
 int32_t rxInterruptHandler(struct uart_rx_dev *dev) {
 
@@ -125,7 +130,7 @@ int32_t rxInterruptHandler(struct uart_rx_dev *dev) {
 		return -1;
 
 	} else {
-		dev->received_data_handler(getRxFrameBufferData(dev));
+		dev->received_data_handler(getRxFrameBufferData(dev), getRxFrameBufferParityBit(dev));
 	}
 	reset_rx_frame_buffer(dev);
 	return 1;
